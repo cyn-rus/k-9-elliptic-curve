@@ -1,7 +1,6 @@
 package com.fsck.k9.mailEncryption;
 
 
-import java.math.BigInteger;
 
 
 public class Utils {
@@ -44,6 +43,14 @@ public class Utils {
             result += String.format("%8s", Integer.toBinaryString(c)).replaceAll(" ", "0");
         }
         return result;
+    }
+
+    public static int hexToNumber(String hex) {
+        return Integer.parseInt(hex, 16);
+    }
+
+    public static int byteToNumber(Byte b) {
+        return b.intValue();
     }
 
     public static String XOR(String stringA, String stringB) {
