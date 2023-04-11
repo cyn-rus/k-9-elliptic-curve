@@ -53,6 +53,19 @@ public class Utils {
         return b.intValue();
     }
 
+    public static int[] stringToNumber(String string) {
+        String[] bin = new String[];
+        for (int i = 0; i < string.length; i++) {
+            bin[i] = stringToBinary(string[i]);   
+        }
+        
+        int[] num = new int[];
+        for (int i = 0; i < bin.length; i++) {
+            num[i] = binaryToNumber(bin[i]);
+        }
+        return num;
+    }
+
     public static String XOR(String stringA, String stringB) {
         String result = "";
         for (int i = 0; i < stringA.length(); i++) {

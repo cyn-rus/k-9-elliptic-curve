@@ -13,16 +13,15 @@ public class Keccak {
     private final int l = (n - 12) / 2;
     private final int w = (int) Math.pow((double) l, 2);
 
-    private int[][] a;
-    private int[][] b;
     private int[] state = new int[200];
     {
         Arrays.fill(this.state, 0);
     }
-    private void theta(int[] a) {
+
+    private int[] theta(int[] a) {
         int[] c = new int[5];
         for (int i = 0; i < 5; i++) {
-            c[i] = this.a[i][0] ^ this.a[i][1] ^ this.a[i][2] ^ this.a[i][3] ^ this.a[i][4];
+            c[i] = a[i][0] ^ a[i][1] ^ a[i][2] ^ a[i][3] ^ a[i][4];
         }
         int[] d = new int[5];
         int j, k;
@@ -34,12 +33,14 @@ public class Keccak {
 
         for (int i = 0; i < 5; i++) {
             for (j = 0; j < 5; j++) {
-                this.a[i][j] ^= d[i];
+                a[i][j] ^= d[i];
             }
         }
+        
+        return a;
     }
 
-    private void rhoAndPi() {
+    private int[] rhoAndPi(int[] a) {
         final int[][] rot = new int[][] {
             new int[] {0, 36, 3, 41, 18},
             new int[] {1, 44, 10, 45, 2},
@@ -48,28 +49,33 @@ public class Keccak {
             new int[] {27, 20, 39, 8, 14},
         };
 
+        int[][] b = new int[5][5];
         int k;
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 k = ((2 * i) + (3 * j)) % 5;
-                this.b[j][k] = this.a[i][j] << rot[i][j];
+                b[j][k] = a[i][j] << rot[i][j];
             }
         }
+        
+        return b;
     }
 
-    private void chi() {
-        this.a = new int[5][5];
+    private int[][] chi(int[] b) {
+        int[][] a = new int[5][5];
         int k, l;
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 k = (i + 1) % 5;
                 l = (i + 2) % 5;
-                this.a[i][j] = this.b[i][j] ^ (~(this.b[k][j]) & this.b[l][j]);
+                a[i][j] = b[i][j] ^ (~(b[k][j]) & b[l][j]);
             }
         }
+
+        return a;
     }
 
-    private void iota() {
+    private int[][] iota(int[][] a) {
         final String[] rc = {
             "0x0000000000000001", "0x0000000000008082",
             "0x800000000000808A", "0x8000000080008000",
@@ -86,21 +92,49 @@ public class Keccak {
         };
 
         for (int i = 0; i < this.n; i++) {
-            this.a[0][0] = this.a[0][0] ^ Utils.hexToNumber(rc[i]);
+            a[0][0] = a[0][0] ^ Utils.hexToNumber(rc[i]);
         }
     }
 
-    private void padding(byte[] sign) {
+    private int[] padding(int[] sign) {
+        if (sign.length() % this.r == 0) return sign;
 
+        String pad = '';
+        while ((sign.length() + pad.length + 1) % this.r != 0) {
+            if (pad.length == 0) pad += '1';
+            pad += '0';
+        }
+        pad += '1';
+
+        int[] result = new int[pad.length];
+        for (int i = 0; i < pad.length; i++) {
+            result[i] = Integer.parseInt(pad[i]);
+        }
+
+        return result;
     }
 
     public int[] keccakF(int[] state) {
-//        int[][] a = new int[5][5];
-//        this.theta();
-//        this.rhoAndPi();
-//        this.chi();
-//        this.iota();
-        return state;
+        StringBuilder[] temp = new StringBuilder();
+        int[] convertedState = new int[25];
+        for (int i = 0; i < state.length(); i++) {
+            if (i % 8 == 0) {
+                convertedState = Utils.binaryToNumber(temp);
+                temp = new StringBuilder();
+            }
+        }
+        
+        int[][] a = new int[5][5];
+        for (int i = 0; i < convertedState.length(); i++) {
+            a[(int) Math.floor((double) i / 5)][i % 5] = convertedState[i];
+        }
+        
+        a = this.theta(a);
+        int[] b = this.rhoAndPi(a);
+        a = this.chi(b);
+        a = this.iota(a);
+        
+        return a;
     }
 
     private void absorbing(int[] blockMessage) {
@@ -109,12 +143,12 @@ public class Keccak {
         int messageLength = blockMessage.length;
 
         while (processedBytes < messageLength) {
-            int blockSize = Math.min(bytesToProcess, messageLength - processedBytes);
-            for (int i = 0; i < blockSize; i++) {
+            int bitsSize = Math.min(bytesToProcess, messageLength - processedBytes);
+            for (int i = 0; i < bitsSize; i++) {
                 this.state[i] ^= blockMessage[i + processedBytes];
             }
             processedBytes += blockSize;
-            if (blockSize == bytesToProcess) {
+            if (bitsSize == bytesToProcess) {
                 this.state = this.keccakF(this.state);
             }
         }
@@ -127,6 +161,8 @@ public class Keccak {
 
 
     public void hash(String sign) {
-//        this.absorbing(sign);
+        int[] signBinary = Utils.stringToNumber(sign);
+        int[] paddedSign = this.padding(signBinary);
+        this.absorbing(paddedSign);
     }
 }
