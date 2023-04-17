@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fsck.k9.Utils;
+
 
 public class FeistelModified {
     private static int[] expansionMatrix = {

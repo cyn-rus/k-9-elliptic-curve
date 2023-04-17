@@ -6,7 +6,7 @@ package com.fsck.k9.mailEncryption;
 public class Utils {
     public static int binaryToNumber(String binary) {
         return Integer.parseInt(binary, 2);
-    };
+    }
 
     public static String binaryToHex(String bin) {
         String result = "";
@@ -29,7 +29,7 @@ public class Utils {
     }
 
     public static String numberToBinary(int num) {
-        return Integer.toBinaryString(num);
+        return String.format("%8s", Integer.toBinaryString(num));
     }
 
     public static String hexToBinary(String hex) {
@@ -54,12 +54,12 @@ public class Utils {
     }
 
     public static int[] stringToNumber(String string) {
-        String[] bin = new String[];
-        for (int i = 0; i < string.length; i++) {
-            bin[i] = stringToBinary(string[i]);   
+        String[] bin = new String[string.length()];
+        for (int i = 0; i < string.length(); i++) {
+            bin[i] = stringToBinary(String.valueOf(string.charAt(i)));
         }
         
-        int[] num = new int[];
+        int[] num = new int[bin.length];
         for (int i = 0; i < bin.length; i++) {
             num[i] = binaryToNumber(bin[i]);
         }
@@ -76,13 +76,13 @@ public class Utils {
             }
         }
         return result;
-    };
+    }
 
     public static String permutate(String string, int[] permutationMatrix) {
         String result = "";
         for (int i = 0; i < permutationMatrix.length; i++) {
             result += string.charAt(permutationMatrix[i] - 1);
-        };
+        }
         return result;
-    };
+    }
 }

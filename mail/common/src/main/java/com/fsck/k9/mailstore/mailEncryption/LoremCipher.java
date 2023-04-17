@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import com.fsck.k9.Utils;
+
 
 public class LoremCipher {
     private static int[] ip = {
