@@ -1,46 +1,50 @@
 package com.fsck.k9.digitalSignEcnryption;
 
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
-import com.fsck.k9.mailEncryption.Utils;
+import com.fsck.k9.Utils;
+import com.fsck.k9.logging.Timber;
 
 
 public class Keccak {
     private final int r = 1088;
-    private final int c = 512;
     private final int n = 24;
     private final int l = (n - 12) / 2;
-    private final int w = (int) Math.pow((double) l, 2);
 
-    private int[] state = new int[200];
+    private final int bytesToProcess = this.r / 8;
+
+    private BigInteger[] state = new BigInteger[200];
     {
-        Arrays.fill(this.state, 0);
+        for (int i = 0; i < 200; i++) {
+            state[i] = BigInteger.valueOf(0);
+        }
     }
 
-    private int[] theta(int[] a) {
-        int[] c = new int[5];
+    private BigInteger[][] theta(BigInteger[][] a) {
+        BigInteger[] c = new BigInteger[5];
         for (int i = 0; i < 5; i++) {
-            c[i] = a[i][0] ^ a[i][1] ^ a[i][2] ^ a[i][3] ^ a[i][4];
+            c[i] = a[i][0].xor(a[i][1]).xor(a[i][2]).xor(a[i][3]).xor(a[i][4]);
         }
-        int[] d = new int[5];
+        BigInteger[] d = new BigInteger[5];
         int j, k;
         for (int i = 0; i < 5; i++) {
             j = ((i - 1) + 5) % 5;
             k = (i + 1) % 5;
-            d[i] = c[j] ^ (c[k] << 1);
+            d[i] = c[j].xor(c[k].shiftLeft(1));
         }
 
         for (int i = 0; i < 5; i++) {
             for (j = 0; j < 5; j++) {
-                a[i][j] ^= d[i];
+               a[i][j] = a[i][j].xor(d[i]);
             }
         }
         
         return a;
     }
 
-    private int[] rhoAndPi(int[] a) {
+    private BigInteger[][] rhoAndPi(BigInteger[][] a) {
         final int[][] rot = new int[][] {
             new int[] {0, 36, 3, 41, 18},
             new int[] {1, 44, 10, 45, 2},
@@ -49,33 +53,33 @@ public class Keccak {
             new int[] {27, 20, 39, 8, 14},
         };
 
-        int[][] b = new int[5][5];
+        BigInteger[][] b = new BigInteger[5][5];
         int k;
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 k = ((2 * i) + (3 * j)) % 5;
-                b[j][k] = a[i][j] << rot[i][j];
+                b[j][k] = a[i][j].shiftLeft(rot[i][j]);
             }
         }
         
         return b;
     }
 
-    private int[][] chi(int[] b) {
-        int[][] a = new int[5][5];
+    private BigInteger[][] chi(BigInteger[][] b) {
+        BigInteger[][] a = new BigInteger[5][5];
         int k, l;
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 k = (i + 1) % 5;
                 l = (i + 2) % 5;
-                a[i][j] = b[i][j] ^ (~(b[k][j]) & b[l][j]);
+                a[i][j] = b[i][j].xor(b[l][j].andNot(b[k][j]));
             }
         }
 
         return a;
     }
 
-    private int[][] iota(int[][] a) {
+    private BigInteger[][] iota(BigInteger[][] a) {
         final String[] rc = {
             "0x0000000000000001", "0x0000000000008082",
             "0x800000000000808A", "0x8000000080008000",
@@ -92,77 +96,105 @@ public class Keccak {
         };
 
         for (int i = 0; i < this.n; i++) {
-            a[0][0] = a[0][0] ^ Utils.hexToNumber(rc[i]);
+            a[0][0] = a[0][0].and(new BigInteger(rc[i].substring(2), 16));
         }
+
+        return a;
     }
 
-    private int[] padding(int[] sign) {
+    private String padding(String sign) {
         if (sign.length() % this.r == 0) return sign;
 
-        String pad = '';
-        while ((sign.length() + pad.length + 1) % this.r != 0) {
-            if (pad.length == 0) pad += '1';
-            pad += '0';
+        String temp = sign + "00000110";
+        while (temp.length() % this.r != 0) {
+            if ((temp.length() + 1) % this.r == 0) temp += '1';
+            else temp += '0';
         }
-        pad += '1';
+        return temp;
+    }
 
-        int[] result = new int[pad.length];
-        for (int i = 0; i < pad.length; i++) {
-            result[i] = Integer.parseInt(pad[i]);
+    public BigInteger[] keccakF(BigInteger[] state) {
+        String temp = "";
+        BigInteger[] convertedState = new BigInteger[25];
+        for (int i = 0; i < state.length; i++) {
+            temp = Utils.numberToBinary(state[i]) + temp;
+            if ((i + 1) % 8 == 0) {
+                convertedState[(int) Math.floor((i + 1) / 8) - 1] = new BigInteger(temp, 2);
+                temp = "";
+            }
+        }
+
+        BigInteger[][] a = new BigInteger[5][5];
+        for (int i = 0; i < convertedState.length; i++) {
+            a[(int) Math.floor((double) i / 5)][i % 5] = convertedState[i];
+        }
+
+        a = this.theta(a);
+        BigInteger[][] b = this.rhoAndPi(a);
+        a = this.chi(b);
+        a = this.iota(a);
+
+        BigInteger[] result = new BigInteger[200];
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                String bin = Utils.numberToBinary(a[i][j]);
+                Timber.d("a[i][j] %s", a[i][j]);
+                Timber.d("bin %s", bin);
+
+                for (int k = 0; k < bin.length(); k += 8) {
+                    result[(i * 40) + (j * 8) + (k / 8)] = new BigInteger(bin.substring(k, (k + 8)), 2);
+                    Timber.d("result %s", result[(i * 40) + (j * 8) + (k/8)]);
+                }
+            }
         }
 
         return result;
     }
 
-    public int[] keccakF(int[] state) {
-        StringBuilder[] temp = new StringBuilder();
-        int[] convertedState = new int[25];
-        for (int i = 0; i < state.length(); i++) {
-            if (i % 8 == 0) {
-                convertedState = Utils.binaryToNumber(temp);
-                temp = new StringBuilder();
-            }
-        }
-        
-        int[][] a = new int[5][5];
-        for (int i = 0; i < convertedState.length(); i++) {
-            a[(int) Math.floor((double) i / 5)][i % 5] = convertedState[i];
-        }
-        
-        a = this.theta(a);
-        int[] b = this.rhoAndPi(a);
-        a = this.chi(b);
-        a = this.iota(a);
-        
-        return a;
-    }
-
     private void absorbing(int[] blockMessage) {
-        int bytesToProcess = this.r / 8;
         int processedBytes = 0;
         int messageLength = blockMessage.length;
 
         while (processedBytes < messageLength) {
-            int bitsSize = Math.min(bytesToProcess, messageLength - processedBytes);
-            for (int i = 0; i < bitsSize; i++) {
-                this.state[i] ^= blockMessage[i + processedBytes];
+            int bytesSize = Math.min(this.bytesToProcess, messageLength - processedBytes);
+            for (int i = 0; i < bytesSize; i++) {
+                this.state[i] = this.state[i].xor(BigInteger.valueOf(blockMessage[i + processedBytes]));
+                Timber.d("state[i] %s", state[i]);
             }
-            processedBytes += blockSize;
-            if (bitsSize == bytesToProcess) {
+            processedBytes += bytesSize;
+            if (bytesSize == this.bytesToProcess) {
                 this.state = this.keccakF(this.state);
             }
         }
     }
 
-    private String squeezing() {
-        int outputLen = 64;
-        return "test";
+    public String squeezing() {
+        int outputBytesLength = 32;
+        String output = "";
+        for (int i = 0; i < outputBytesLength; i++) {
+            output += Utils.binaryToString(this.state[i].toString(2));
+            this.state = this.keccakF(this.state);
+        }
+        return output;
     }
 
+    public String hash(String sign) {
+        String signBinary = Utils.stringToBinary(sign);
+        String paddedSign = this.padding(signBinary);
 
-    public void hash(String sign) {
-        int[] signBinary = Utils.stringToNumber(sign);
-        int[] paddedSign = this.padding(signBinary);
-        this.absorbing(paddedSign);
+        int paddedSignLength = paddedSign.length();
+        Timber.d("paddedSign, %s", paddedSign);
+        int[] splitSign = new int[paddedSignLength / 8];
+        int j = 0;
+        for (int i = 0; i < paddedSignLength; i += 8) {
+            String temp = paddedSign.substring(i, i + 8);
+            splitSign[j] = Utils.binaryToNumber(temp);
+            j++;
+        }
+        this.absorbing(splitSign);
+        this.state[this.state.length - 1] = this.state[this.state.length - 1].xor(new BigInteger("80"));
+        String result = this.squeezing();
+
+        return result;
     }
 }

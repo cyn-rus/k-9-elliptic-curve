@@ -1,6 +1,7 @@
-package com.fsck.k9.mailEncryption;
+package com.fsck.k9;
 
 
+import java.math.BigInteger;
 
 
 public class Utils {
@@ -29,7 +30,15 @@ public class Utils {
     }
 
     public static String numberToBinary(int num) {
-        return String.format("%8s", Integer.toBinaryString(num));
+        return String.format("%8s", Integer.toBinaryString(num)).replaceAll(" ", "0");
+    }
+
+    public static String numberToBinary(BigInteger num) {
+        String result = num.toString(2);
+        while (result.length() != 64) {
+            result = '0' + result;
+        }
+        return result;
     }
 
     public static String hexToBinary(String hex) {

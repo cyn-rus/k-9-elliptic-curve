@@ -1,4 +1,4 @@
-package com.fsck.k9.mailEncryption;
+package com.fsck.k9.mailstore.mailEncryption;
 
 
 import java.util.ArrayList;
