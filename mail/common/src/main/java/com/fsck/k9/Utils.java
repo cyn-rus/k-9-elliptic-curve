@@ -38,14 +38,26 @@ public class Utils {
     }
 
     public static String hexToBinary(String hex) {
-        return Integer.toBinaryString(Integer.parseInt(hex, 16));
+        String result = "";
+        for (int i = 0; i < hex.length(); i++) {
+            String bin = Integer.toBinaryString(Integer.parseInt(String.valueOf(hex.charAt(i)), 16));
+            if (bin.length() != 4) {
+                bin = String.format("%4s", bin).replaceAll(" ", "0");
+            }
+            result += bin;
+        }
+        return result;
     }
 
     public static String stringToBinary(String string) {
         String result = "";
         char[] chars = string.toCharArray();
         for (char c : chars) {
-            result += String.format("%8s", Integer.toBinaryString(c)).replaceAll(" ", "0");
+            String bin = Integer.toBinaryString(c);
+            if (bin.length() != 8) {
+                bin = String.format("%8s", bin).replaceAll(" ", "0");
+            }
+            result += bin;
         }
         return result;
     }

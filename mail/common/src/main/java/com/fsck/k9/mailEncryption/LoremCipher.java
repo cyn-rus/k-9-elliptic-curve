@@ -3,7 +3,6 @@ package com.fsck.k9.mailEncryption;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import com.fsck.k9.Utils;
 
@@ -44,8 +43,6 @@ public class LoremCipher {
 
     private FeistelModified f = new FeistelModified();
 
-    private int paddingLength = 0;
-
     private String[] initialPermutate(String text) {
         int halfBlockLength = text.length() / 2;
         String leftBlock = text.substring(0, halfBlockLength);
@@ -60,9 +57,9 @@ public class LoremCipher {
         return new String[] {leftPermutation, rightPermutation};
     }
 
-    private String[] feistelFunction(String L, String R, List<String> key) {
+    private String[] feistelFunction(String L, String R, String[] key) {
         for (int i = 0; i < 16; i++) {
-            String feistel = this.f.encrypt(R, key.get(i));
+            String feistel = this.f.encrypt(R, key[i]);
             String permutatedFeistel = Utils.permutate(feistel, permutateBox);
 
             String temp = L;
@@ -77,7 +74,7 @@ public class LoremCipher {
         return Utils.permutate(L, ipInverse) + Utils.permutate(R, ip);
     }
 
-    public String encrypt(String plaintext, List<String> key) {
+    public String encrypt(String plaintext, String[] key) {
         String finalResult = "";
 
         List<String> splitPlaintext = new ArrayList<>();
@@ -85,16 +82,9 @@ public class LoremCipher {
             splitPlaintext.add(plaintext.substring(i, Math.min(i + 16, plaintext.length())));
         }
 
-        final String alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        Random r = new Random();
         for (String pt : splitPlaintext) {
-            if (pt.length() < 16) {
-                this.paddingLength = 16 - pt.length();
-                String padding = "";
-                for (int i = 0; i < this.paddingLength; i++) {
-                    padding += alphabet.charAt(r.nextInt(alphabet.length()));
-                }
-                pt += padding;
+            while (pt.length() != 16) {
+                pt += '+';
             }
 
             pt = Utils.stringToBinary(pt);
@@ -102,11 +92,10 @@ public class LoremCipher {
             block = this.feistelFunction(block[0], block[1], key);
             finalResult += this.lastPermutate(block[0], block[1]);
         }
-
         return Utils.binaryToHex(finalResult);
     }
 
-    public String decrypt(String ciphertext, List<String> key) {
+    public String decrypt(String ciphertext, String[] key) {
         String finalResult = "";
 
         List<String> splitCiphertext = new ArrayList<>();
@@ -122,7 +111,9 @@ public class LoremCipher {
         }
 
         finalResult = Utils.binaryToString(finalResult);
-        finalResult = finalResult.substring(0, finalResult.length() - this.paddingLength);
+        while (finalResult.charAt(finalResult.length() - 1) == '+') {
+            finalResult = finalResult.substring(0, finalResult.length() - 1);
+        }
         return finalResult;
     }
 }
