@@ -1,4 +1,4 @@
-package com.fsck.k9.mailstore.mailEncryption;
+package com.fsck.k9.mailEncryption;
 
 
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class LoremCipher {
             String temp = L;
             L = R;
             R = Utils.XOR(temp, permutatedFeistel);
-        };
+        }
 
         return new String[] {L, R};
     }

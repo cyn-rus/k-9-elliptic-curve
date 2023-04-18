@@ -1,10 +1,7 @@
-package com.fsck.k9.mailstore.mailEncryption;
+package com.fsck.k9.mailEncryption;
 
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.fsck.k9.Utils;
@@ -135,27 +132,22 @@ public class FeistelModified {
         String xorResult = Utils.XOR(block, key);
         String permutateResult = Utils.permutate(xorResult, expansionMatrix);
 
-        List<List<String>> blockA = new ArrayList<>();
+        String[] blockA = new String[permutateResult.length() / 6];
         for (int i = 0; i < permutateResult.length(); i += 6) {
-            blockA.add(
-                Collections.singletonList(permutateResult.substring(i, Math.min(i + 6, permutateResult.length())))
-            );
-        };
+            blockA[i / 6] = permutateResult.substring(i, i + 6);
+        }
 
         String output = "";
-        for (int i = 0; i < blockA.size(); i++) {
-            String cornerBin = blockA.get(i).get(0) + blockA.get(i).get(5);
-            String centerBin = "";
-            for (int j = 1; j < blockA.get(i).size() - 1; j++) {
-                centerBin += blockA.get(i).get(j);
-            };
+        for (int i = 0; i < blockA.length; i++) {
+            String cornerBin = "" + blockA[i].charAt(0) + blockA[i].charAt(5);
+            String centerBin = blockA[i].substring(1, 5);
 
             int row = Utils.binaryToNumber(cornerBin);
             int col = Utils.binaryToNumber(centerBin);
 
             String value = Utils.numberToBinary(sBox.get(i)[row][col]);
             output += value.substring(value.length() - 4);
-        };
+        }
         return output;
-    };
-};
+    }
+}
