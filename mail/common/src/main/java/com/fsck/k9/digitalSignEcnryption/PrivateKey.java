@@ -2,12 +2,6 @@
 
 // import com.fsck.k9.digitalSignEcnryption.utils.ByteString;
 import utils.ByteString;
-// import com.fsck.k9.digitalSignEcnryption.utils.Der;
-import utils.Der;
-// import com.fsck.k9.digitalSignEcnryption.utils.BinaryAscii;
-import utils.BinaryAscii;
-// import com.fsck.k9.digitalSignEcnryption.utils.RandomInteger;
-import utils.RandomInteger;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -19,7 +13,7 @@ public class PrivateKey {
 
   public PrivateKey() {
     this(Curve.secp256k1, null);
-    secret = RandomInteger.between(BigInteger.ONE, curve.N);
+    secret = Utils.between(BigInteger.ONE, curve.N);
   }
 
   public PrivateKey(Curve curve, BigInteger secret) {
@@ -34,25 +28,25 @@ public class PrivateKey {
   }
 
   public ByteString toByteString() {
-    return BinaryAscii.numToString(this.secret, this.curve.length());
+    return Utils.numToString(this.secret, this.curve.length());
   }
 
   public ByteString toDer() {
     ByteString encodedPublicKey = this.publicKey().toByteString(true);
-    return Der.encodeSequence(
-          Der.encodeInteger(BigInteger.valueOf(1)),
-          Der.encodeOctetString(this.toByteString()),
-          Der.encodeConstructed(0, Der.encodeOid(this.curve.oid)),
-          Der.encodeConstructed(1, Der.encodeBitString(encodedPublicKey)));
+    return Utils.encodeSequence(
+          Utils.encodeInteger(BigInteger.valueOf(1)),
+          Utils.encodeOctetString(this.toByteString()),
+          Utils.encodeConstructed(0, Utils.encodeOid(this.curve.oid)),
+          Utils.encodeConstructed(1, Utils.encodeBitString(encodedPublicKey)));
   }
 
   public String toPem() {
-    return Der.toPem(this.toDer(), "EC PRIVATE KEY");
+    return Utils.toPem(this.toDer(), "EC PRIVATE KEY");
   }
 
   public static PrivateKey fromPem(String string) {
     String privkeyPem = string.substring(string.indexOf("-----BEGIN EC PRIVATE KEY-----"));
-    return PrivateKey.fromDer(Der.fromPem(privkeyPem));
+    return PrivateKey.fromDer(Utils.fromPem(privkeyPem));
   }
 
   public static PrivateKey fromDer(String string) {
@@ -60,15 +54,15 @@ public class PrivateKey {
   }
 
   public static PrivateKey fromDer(ByteString string) {
-    ByteString[] str = Der.removeSequence(string);
+    ByteString[] str = Utils.removeSequence(string);
     ByteString s = str[0];
     ByteString empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException(String.format("trailing junk after DER privkey: %s", BinaryAscii.binToHex(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER privkey: %s", Utils.binToHex(empty)));
     }
 
-    Object[] o = Der.removeInteger(s);
+    Object[] o = Utils.removeInteger(s);
     long one = Long.valueOf(o[0].toString());
     s = (ByteString) o[1];
 
@@ -76,10 +70,10 @@ public class PrivateKey {
       throw new RuntimeException(String.format("expected '1' at start of DER privkey, got %d", one));
     }
 
-    str = Der.removeOctetString(s);
+    str = Utils.removeOctetString(s);
     ByteString privkeyStr = str[0];
     s = str[1];
-    Object[] t = Der.removeConstructed(s);
+    Object[] t = Utils.removeConstructed(s);
     long tag = Long.valueOf(t[0].toString());
     ByteString curveOidStr = (ByteString) t[1];
     s = (ByteString) t[2];
@@ -88,12 +82,12 @@ public class PrivateKey {
       throw new RuntimeException(String.format("expected tag 0 in DER privkey, got %d", tag));
     }
 
-    o = Der.removeObject(curveOidStr);
+    o = Utils.removeObject(curveOidStr);
     long[] oidCurve = (long[]) o[0];
     empty = (ByteString) o[1];
 
     if (!"".equals(empty.toString())) {
-      throw new RuntimeException(String.format("trailing junk after DER privkey curve_oid: %s", BinaryAscii.binToHex(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER privkey curve_oid: %s", Utils.binToHex(empty)));
     }
 
     Curve curve = (Curve) Curve.curvesByOid.get(Arrays.hashCode(oidCurve));
@@ -117,7 +111,7 @@ public class PrivateKey {
   }
 
   public static PrivateKey fromString(ByteString string, Curve curve) {
-    return new PrivateKey(curve, BinaryAscii.stringToNum(string.getBytes()));
+    return new PrivateKey(curve, Utils.stringToNum(string.getBytes()));
   }
 
   public static PrivateKey fromString(String string) {

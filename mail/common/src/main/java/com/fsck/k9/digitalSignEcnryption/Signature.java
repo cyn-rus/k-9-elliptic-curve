@@ -2,12 +2,8 @@
 
 // import com.fsck.k9.digitalSignEcnryption.utils.Base64;
 import utils.Base64;
-// import com.fsck.k9.digitalSignEcnryption.utils.BinaryAscii;
-import utils.BinaryAscii;
 // import com.fsck.k9.digitalSignEcnryption.utils.ByteString;
 import utils.ByteString;
-// import com.fsck.k9.digitalSignEcnryption.utils.Der;
-import utils.Der;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -23,7 +19,7 @@ public class Signature {
   }
 
   public ByteString toDer() {
-    return Der.encodeSequence(Der.encodeInteger(r), Der.encodeInteger(s));
+    return Utils.encodeSequence(Utils.encodeInteger(r), Utils.encodeInteger(s));
   }
 
   public String toBase64() {
@@ -31,23 +27,23 @@ public class Signature {
   }
 
   public static Signature fromDer(ByteString string) {
-    ByteString[] str = Der.removeSequence(string);
+    ByteString[] str = Utils.removeSequence(string);
     ByteString rs = str[0];
     ByteString empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException(String.format("trailing junk after DER sig: %s", BinaryAscii.binToHex(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER sig: %s", Utils.binToHex(empty)));
     }
 
-    Object[] o = Der.removeInteger(rs);
+    Object[] o = Utils.removeInteger(rs);
     BigInteger r = new BigInteger(o[0].toString());
     ByteString rest = (ByteString) o[1];
-    o = Der.removeInteger(rest);
+    o = Utils.removeInteger(rest);
     BigInteger s = new BigInteger(o[0].toString());
     empty = (ByteString) o[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException(String.format("trailing junk after DER numbers: %s", BinaryAscii.binToHex(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER numbers: %s", Utils.binToHex(empty)));
     }
 
     return new Signature(r, s);

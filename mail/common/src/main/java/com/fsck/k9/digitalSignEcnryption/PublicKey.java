@@ -2,13 +2,6 @@
 
 // import com.fsck.k9.digitalSignEcnryption.utils.ByteString;
 import utils.ByteString;
-// import com.fsck.k9.digitalSignEcnryption.utils.Der;
-import utils.Der;
-// import com.fsck.k9.digitalSignEcnryption.utils.BinaryAscii;
-import utils.BinaryAscii;
-// import static com.fsck.k9.digitalSignEcnryption.Curve;
-// import static com.fsck.k9.digitalSignEcnryption.Curve.secp256k1;
-// import static com.fsck.k9.digitalSignEcnryption.Curve.supportedCurves;
 
 import java.util.Arrays;
 
@@ -27,8 +20,8 @@ public class PublicKey {
   }
 
   public ByteString toByteString(boolean encoded) {
-    ByteString xStr = BinaryAscii.numToString(point.x, curve.length());
-    ByteString yStr = BinaryAscii.numToString(point.y, curve.length());
+    ByteString xStr = Utils.numToString(point.x, curve.length());
+    ByteString yStr = Utils.numToString(point.y, curve.length());
     xStr.insert(yStr.getBytes());
 
     if(encoded) {
@@ -40,38 +33,38 @@ public class PublicKey {
 
   public ByteString toDer() {
     long[] oidEcPublicKey = new long[]{1, 2, 840, 10045, 2, 1};
-    ByteString encodeEcAndOid = Der.encodeSequence(Der.encodeOid(oidEcPublicKey), Der.encodeOid(curve.oid));
-    return Der.encodeSequence(encodeEcAndOid, Der.encodeBitString(this.toByteString(true)));
+    ByteString encodeEcAndOid = Utils.encodeSequence(Utils.encodeOid(oidEcPublicKey), Utils.encodeOid(curve.oid));
+    return Utils.encodeSequence(encodeEcAndOid, Utils.encodeBitString(this.toByteString(true)));
   }
 
   public String toPem() {
-    return Der.toPem(this.toDer(), "PUBLIC KEY");
+    return Utils.toPem(this.toDer(), "PUBLIC KEY");
   }
 
   public static PublicKey fromPem(String string) {
-    return PublicKey.fromDer(Der.fromPem(string));
+    return PublicKey.fromDer(Utils.fromPem(string));
   }
 
   public static PublicKey fromDer(ByteString string) {
-    ByteString[] str = Der.removeSequence(string);
+    ByteString[] str = Utils.removeSequence(string);
     ByteString s1 = str[0];
     ByteString empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException (String.format("trailing junk after DER pubkey: %s", BinaryAscii.binToHex(empty)));
+      throw new RuntimeException (String.format("trailing junk after DER pubkey: %s", Utils.binToHex(empty)));
     }
 
-    str = Der.removeSequence(s1);
+    str = Utils.removeSequence(s1);
     ByteString s2 = str[0];
     ByteString pointStrBitstring = str[1];
-    Object[] o = Der.removeObject(s2);
+    Object[] o = Utils.removeObject(s2);
     ByteString rest = (ByteString) o[1];
-    o = Der.removeObject(rest);
+    o = Utils.removeObject(rest);
     long[] oidCurve = (long[]) o[0];
     empty = (ByteString) o[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException (String.format("trailing junk after DER pubkey objects: %s", BinaryAscii.binToHex(empty)));
+      throw new RuntimeException (String.format("trailing junk after DER pubkey objects: %s", Utils.binToHex(empty)));
     }
 
     Curve curve = (Curve) Curve.curvesByOid.get(Arrays.hashCode(oidCurve));
@@ -80,12 +73,12 @@ public class PublicKey {
       throw new RuntimeException(String.format("Unknown curve with oid %s. I only know about these: %s", Arrays.toString(oidCurve), Arrays.toString(Curve.supportedCurves.toArray())));
     }
 
-    str = Der.removeBitString(pointStrBitstring);
+    str = Utils.removeBitString(pointStrBitstring);
     ByteString pointStr = str[0];
     empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException (String.format("trailing junk after pubkey pointstring: %s", BinaryAscii.binToHex(empty)));
+      throw new RuntimeException (String.format("trailing junk after pubkey pointstring: %s", Utils.binToHex(empty)));
     }
 
     return PublicKey.fromString(pointStr.substring(2), curve);
@@ -97,7 +90,7 @@ public class PublicKey {
     ByteString xs = string.substring(0, baselen);
     ByteString ys = string.substring(baselen);
 
-    Point p = new Point(BinaryAscii.stringToNum(xs.getBytes()), BinaryAscii.stringToNum(ys.getBytes()));
+    Point p = new Point(Utils.stringToNum(xs.getBytes()), Utils.stringToNum(ys.getBytes()));
 
     PublicKey publicKey = new PublicKey(p, curve);
 

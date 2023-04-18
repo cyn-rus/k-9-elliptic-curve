@@ -1,21 +1,65 @@
-// package com.fsck.k9.digitalSignEcnryption.utils;
-package utils;
+// package com.fsck.k9.digitalSignEcnryption;
 
-import java.io.IOException;
 import java.math.BigInteger;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.nio.file.*;
+import java.security.SecureRandom;
 
-// import static com.fsck.k9.digitalSignEcnryption.utils.BinaryAscii.*;
-import static utils.BinaryAscii.*;
+import utils.ByteString;
+import utils.Base64;
 
 
-public class Der {
-  private Der() {}
+public class Utils {
+  public static String binToHex(ByteString s) {
+    return binToHex(s.getBytes());
+  }
+
+  public static String binToHex(byte[] bytes) {
+    StringBuilder hexString = new StringBuilder();
+
+    for (byte aByte : bytes) {
+      String hex = Integer.toHexString(0xFF & aByte);
+      if (hex.length() == 1) {
+        hexString.append('0');
+      }
+      hexString.append(hex);
+    }
+
+    return hexString.toString();
+  }
+
+  public static byte[] hexToBin(String s) {
+    byte[] bytes = new BigInteger(s, 16).toByteArray();
+    int i = 0;
+
+    while (i < bytes.length && bytes[i] == 0) {
+      i++;
+    }
+
+    return Arrays.copyOfRange(bytes, i, bytes.length);
+  }
+
+  public static byte[] toBytes(int c) {
+    return new byte[]{(byte) c};
+  }
+
+  public static BigInteger stringToNum(byte[] s) {
+    return new BigInteger(Utils.binToHex(s), 16);
+  }
+
+  public static ByteString numToString(BigInteger num, int length) {
+    String fmtStr = "%0" + String.valueOf(2 * length) + "x";
+    String hexString = String.format(fmtStr, num);
+    return new ByteString(Utils.hexToBin(hexString));
+  }
 
   public static ByteString encodeSequence(ByteString... encodedPieces) {
     int totalLen = 0;
-    ByteString stringPieces = new ByteString(toBytes(0x30));
+    ByteString stringPieces = new ByteString(Utils.toBytes(0x30));
 
     for (ByteString p : encodedPieces) {
       totalLen += p.length();
@@ -31,7 +75,7 @@ public class Der {
     assert length >= 0;
 
     if (length < 0x80) {
-      return new ByteString(toBytes(length));
+      return new ByteString(Utils.toBytes(length));
     }
 
     String hexString = String.format("%x", length);
@@ -40,8 +84,8 @@ public class Der {
       hexString = "0" + hexString;
     }
 
-    ByteString s = new ByteString(hexToBin(hexString));
-    s.insert(0, toBytes((0x80 | s.length())));
+    ByteString s = new ByteString(Utils.hexToBin(hexString));
+    s.insert(0, Utils.toBytes((0x80 | s.length())));
 
     return s;
   }
@@ -55,19 +99,19 @@ public class Der {
       h = "0" + h;
     }
 
-    ByteString s = new ByteString(hexToBin(h));
+    ByteString s = new ByteString(Utils.hexToBin(h));
     short num = s.getShort(0);
 
     if (num <= 0x7F) {
-      s.insert(0, toBytes(s.length()));
-      s.insert(0, toBytes(0x02));
+      s.insert(0, Utils.toBytes(s.length()));
+      s.insert(0, Utils.toBytes(0x02));
       return s;
     }
 
     int length = s.length();
-    s.insert(0, toBytes(0x00));
-    s.insert(0, toBytes((length + 1)));
-    s.insert(0, toBytes(0x02));
+    s.insert(0, Utils.toBytes(0x00));
+    s.insert(0, Utils.toBytes((length + 1)));
+    s.insert(0, Utils.toBytes(0x02));
 
     return s;
   }
@@ -76,12 +120,12 @@ public class Der {
     ByteString b128Digits = new ByteString();
 
     while (n != 0) {
-      b128Digits.insert(0, toBytes((int) (n & 0x7f) | 0x80));
+      b128Digits.insert(0, Utils.toBytes((int) (n & 0x7f) | 0x80));
       n = n >> 7;
     }
 
     if (b128Digits.isEmpty()) {
-      b128Digits.insert(toBytes(0));
+      b128Digits.insert(Utils.toBytes(0));
     }
 
     int lastIndex = b128Digits.length() - 1;
@@ -103,30 +147,30 @@ public class Der {
       body.insert(encodeNumber(pieces[i]).getBytes());
     }
 
-    body.insert(0, toBytes((int) (40 * first + second)));
+    body.insert(0, Utils.toBytes((int) (40 * first + second)));
     body.insert(0, encodeLength(body.length()).getBytes());
-    body.insert(0, toBytes(0x06));
+    body.insert(0, Utils.toBytes(0x06));
 
     return body;
   }
 
   public static ByteString encodeBitString(ByteString s) {
     s.insert(0, encodeLength(s.length()).getBytes());
-    s.insert(0, toBytes(0x03));
+    s.insert(0, Utils.toBytes(0x03));
 
     return s;
   }
 
   public static ByteString encodeOctetString(ByteString s) {
     s.insert(0, encodeLength(s.length()).getBytes());
-    s.insert(0, toBytes(0x04));
+    s.insert(0, Utils.toBytes(0x04));
 
     return s;
   }
 
   public static ByteString encodeConstructed(long tag, ByteString value) {
     value.insert(0, encodeLength(value.length()).getBytes());
-    value.insert(0, toBytes((int) (0xa0 + tag)));
+    value.insert(0, Utils.toBytes((int) (0xa0 + tag)));
 
     return value;
   }
@@ -144,7 +188,7 @@ public class Der {
       throw new RuntimeException("ran out of length bytes");
     }
 
-    return new int[]{Integer.valueOf(binToHex(string.substring(1, 1 + llen)), 16), 1 + llen};
+    return new int[]{Integer.valueOf(Utils.binToHex(string.substring(1, 1 + llen)), 16), 1 + llen};
   }
 
   public static int[] readNumber(ByteString string) {
@@ -197,7 +241,7 @@ public class Der {
 
     assert nbytes < 0x80;
 
-    return new Object[]{new BigInteger(binToHex(numberbytes), 16), rest};
+    return new Object[]{new BigInteger(Utils.binToHex(numberbytes), 16), rest};
   }
 
   public static Object[] removeObject(ByteString string) {
@@ -315,5 +359,36 @@ public class Der {
     lines.append(String.format("-----END %s-----\n", name));
 
     return lines.toString();
+  }
+
+  public static String read(String fileName) {
+    String content = "";
+
+    try {
+      content = new String(Files.readAllBytes(Paths.get(fileName)));
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    return content;
+  }
+
+  public static byte[] readBytes(String fileName) {
+    byte[] content = null;
+    
+    try {
+      content = Files.readAllBytes(Paths.get(fileName));
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    return content;
+  }
+
+  public static BigInteger between(BigInteger start, BigInteger end) {
+    Random random = new SecureRandom();
+    return new BigInteger(end.toByteArray().length * 8 - 1, random).abs().add(start);
   }
 }

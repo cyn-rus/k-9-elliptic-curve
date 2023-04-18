@@ -1,10 +1,5 @@
 // package com.fsck.k9.digitalSignEcnryption;
 
-// import com.fsck.k9.digitalSignEcnryption.utils.BinaryAscii;
-import utils.BinaryAscii;
-// import com.fsck.k9.digitalSignEcnryption.utils.RandomInteger;
-import utils.RandomInteger;
-
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -13,9 +8,9 @@ import java.security.NoSuchAlgorithmException;
 public class ECDSA {
   public static Signature sign(String msg, PrivateKey key, MessageDigest hash) {
     byte[] hashValue = hash.digest(msg.getBytes());
-    BigInteger rawMsg = BinaryAscii.stringToNum(hashValue);
+    BigInteger rawMsg = Utils.stringToNum(hashValue);
     Curve curve = key.curve;
-    BigInteger random = RandomInteger.between(BigInteger.ONE, curve.N);
+    BigInteger random = Utils.between(BigInteger.ONE, curve.N);
     Point randomSignPoint = Math.multiply(curve.G, random, curve.N, curve.A, curve.P);
     BigInteger r = randomSignPoint.x.mod(curve.N);
     BigInteger s = ((rawMsg.add(r.multiply(key.secret))).multiply(Math.inv(random, curve.N))).mod(curve.N);
@@ -25,7 +20,7 @@ public class ECDSA {
 
   public static boolean verify(String msg, Signature signature, PublicKey key, MessageDigest hash) {
     byte[] hashValue = hash.digest(msg.getBytes());
-    BigInteger rawMsg = BinaryAscii.stringToNum(hashValue);
+    BigInteger rawMsg = Utils.stringToNum(hashValue);
     Curve curve = key.curve;
     BigInteger r = signature.r;
     BigInteger s = signature.s;
