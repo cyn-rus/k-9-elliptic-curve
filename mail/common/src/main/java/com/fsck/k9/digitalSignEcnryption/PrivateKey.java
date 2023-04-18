@@ -34,7 +34,7 @@ public class PrivateKey {
   }
 
   public ByteString toByteString() {
-    return BinaryAscii.stringFromNumber(this.secret, this.curve.length());
+    return BinaryAscii.numToString(this.secret, this.curve.length());
   }
 
   public ByteString toDer() {
@@ -65,7 +65,7 @@ public class PrivateKey {
     ByteString empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException(String.format("trailing junk after DER privkey: %s", BinaryAscii.hexFromBinary(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER privkey: %s", BinaryAscii.binToHex(empty)));
     }
 
     Object[] o = Der.removeInteger(s);
@@ -93,7 +93,7 @@ public class PrivateKey {
     empty = (ByteString) o[1];
 
     if (!"".equals(empty.toString())) {
-      throw new RuntimeException(String.format("trailing junk after DER privkey curve_oid: %s", BinaryAscii.hexFromBinary(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER privkey curve_oid: %s", BinaryAscii.binToHex(empty)));
     }
 
     Curve curve = (Curve) Curve.curvesByOid.get(Arrays.hashCode(oidCurve));
@@ -117,7 +117,7 @@ public class PrivateKey {
   }
 
   public static PrivateKey fromString(ByteString string, Curve curve) {
-    return new PrivateKey(curve, BinaryAscii.numberFromString(string.getBytes()));
+    return new PrivateKey(curve, BinaryAscii.stringToNum(string.getBytes()));
   }
 
   public static PrivateKey fromString(String string) {

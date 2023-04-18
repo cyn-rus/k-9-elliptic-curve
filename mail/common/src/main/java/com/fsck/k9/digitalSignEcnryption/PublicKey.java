@@ -27,8 +27,8 @@ public class PublicKey {
   }
 
   public ByteString toByteString(boolean encoded) {
-    ByteString xStr = BinaryAscii.stringFromNumber(point.x, curve.length());
-    ByteString yStr = BinaryAscii.stringFromNumber(point.y, curve.length());
+    ByteString xStr = BinaryAscii.numToString(point.x, curve.length());
+    ByteString yStr = BinaryAscii.numToString(point.y, curve.length());
     xStr.insert(yStr.getBytes());
 
     if(encoded) {
@@ -58,7 +58,7 @@ public class PublicKey {
     ByteString empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException (String.format("trailing junk after DER pubkey: %s", BinaryAscii.hexFromBinary(empty)));
+      throw new RuntimeException (String.format("trailing junk after DER pubkey: %s", BinaryAscii.binToHex(empty)));
     }
 
     str = Der.removeSequence(s1);
@@ -71,7 +71,7 @@ public class PublicKey {
     empty = (ByteString) o[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException (String.format("trailing junk after DER pubkey objects: %s", BinaryAscii.hexFromBinary(empty)));
+      throw new RuntimeException (String.format("trailing junk after DER pubkey objects: %s", BinaryAscii.binToHex(empty)));
     }
 
     Curve curve = (Curve) Curve.curvesByOid.get(Arrays.hashCode(oidCurve));
@@ -85,7 +85,7 @@ public class PublicKey {
     empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException (String.format("trailing junk after pubkey pointstring: %s", BinaryAscii.hexFromBinary(empty)));
+      throw new RuntimeException (String.format("trailing junk after pubkey pointstring: %s", BinaryAscii.binToHex(empty)));
     }
 
     return PublicKey.fromString(pointStr.substring(2), curve);
@@ -97,7 +97,7 @@ public class PublicKey {
     ByteString xs = string.substring(0, baselen);
     ByteString ys = string.substring(baselen);
 
-    Point p = new Point(BinaryAscii.numberFromString(xs.getBytes()), BinaryAscii.numberFromString(ys.getBytes()));
+    Point p = new Point(BinaryAscii.stringToNum(xs.getBytes()), BinaryAscii.stringToNum(ys.getBytes()));
 
     PublicKey publicKey = new PublicKey(p, curve);
 

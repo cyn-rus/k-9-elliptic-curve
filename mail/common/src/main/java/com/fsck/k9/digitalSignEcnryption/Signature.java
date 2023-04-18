@@ -36,7 +36,7 @@ public class Signature {
     ByteString empty = str[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException(String.format("trailing junk after DER sig: %s", BinaryAscii.hexFromBinary(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER sig: %s", BinaryAscii.binToHex(empty)));
     }
 
     Object[] o = Der.removeInteger(rs);
@@ -47,7 +47,7 @@ public class Signature {
     empty = (ByteString) o[1];
 
     if (!empty.isEmpty()) {
-      throw new RuntimeException(String.format("trailing junk after DER numbers: %s", BinaryAscii.hexFromBinary(empty)));
+      throw new RuntimeException(String.format("trailing junk after DER numbers: %s", BinaryAscii.binToHex(empty)));
     }
 
     return new Signature(r, s);

@@ -6,11 +6,11 @@ import java.util.Arrays;
 
 
 public final class BinaryAscii {
-  public static String hexFromBinary(ByteString string) {
-    return hexFromBinary(string.getBytes());
+  public static String binToHex(ByteString s) {
+    return binToHex(s.getBytes());
   }
 
-  public static String hexFromBinary(byte[] bytes) {
+  public static String binToHex(byte[] bytes) {
     StringBuilder hexString = new StringBuilder();
 
     for (byte aByte : bytes) {
@@ -24,8 +24,8 @@ public final class BinaryAscii {
     return hexString.toString();
   }
 
-  public static byte[] binaryFromHex(String string) {
-    byte[] bytes = new BigInteger(string, 16).toByteArray();
+  public static byte[] hexToBin(String s) {
+    byte[] bytes = new BigInteger(s, 16).toByteArray();
     int i = 0;
 
     while (i < bytes.length && bytes[i] == 0) {
@@ -39,13 +39,13 @@ public final class BinaryAscii {
     return new byte[]{(byte) c};
   }
 
-  public static BigInteger numberFromString(byte[] string) {
-    return new BigInteger(BinaryAscii.hexFromBinary(string), 16);
+  public static BigInteger stringToNum(byte[] s) {
+    return new BigInteger(BinaryAscii.binToHex(s), 16);
   }
 
-  public static ByteString stringFromNumber(BigInteger number, int length) {
+  public static ByteString numToString(BigInteger num, int length) {
     String fmtStr = "%0" + String.valueOf(2 * length) + "x";
-    String hexString = String.format(fmtStr, number);
-    return new ByteString(BinaryAscii.binaryFromHex(hexString));
+    String hexString = String.format(fmtStr, num);
+    return new ByteString(BinaryAscii.hexToBin(hexString));
   }
 }

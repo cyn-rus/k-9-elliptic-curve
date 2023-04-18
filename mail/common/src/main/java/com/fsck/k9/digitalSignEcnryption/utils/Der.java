@@ -11,9 +11,7 @@ import static utils.BinaryAscii.*;
 
 
 public class Der {
-  private Der() {
-    throw new UnsupportedOperationException("Der is a utility class and cannot be instantiated");
-  }
+  private Der() {}
 
   public static ByteString encodeSequence(ByteString... encodedPieces) {
     int totalLen = 0;
@@ -42,7 +40,7 @@ public class Der {
       hexString = "0" + hexString;
     }
 
-    ByteString s = new ByteString(binaryFromHex(hexString));
+    ByteString s = new ByteString(hexToBin(hexString));
     s.insert(0, toBytes((0x80 | s.length())));
 
     return s;
@@ -57,7 +55,7 @@ public class Der {
       h = "0" + h;
     }
 
-    ByteString s = new ByteString(binaryFromHex(h));
+    ByteString s = new ByteString(hexToBin(h));
     short num = s.getShort(0);
 
     if (num <= 0x7F) {
@@ -146,7 +144,7 @@ public class Der {
       throw new RuntimeException("ran out of length bytes");
     }
 
-    return new int[]{Integer.valueOf(hexFromBinary(string.substring(1, 1 + llen)), 16), 1 + llen};
+    return new int[]{Integer.valueOf(binToHex(string.substring(1, 1 + llen)), 16), 1 + llen};
   }
 
   public static int[] readNumber(ByteString string) {
@@ -199,7 +197,7 @@ public class Der {
 
     assert nbytes < 0x80;
 
-    return new Object[]{new BigInteger(hexFromBinary(numberbytes), 16), rest};
+    return new Object[]{new BigInteger(binToHex(numberbytes), 16), rest};
   }
 
   public static Object[] removeObject(ByteString string) {
