@@ -22,6 +22,21 @@ public class Keccak {
         }
     }
 
+    private final String[] rc = {
+            "0x0000000000000001", "0x0000000000008082",
+            "0x800000000000808A", "0x8000000080008000",
+            "0x000000000000808B", "0x0000000080000001",
+            "0x8000000080008081", "0x8000000000008009",
+            "0x000000000000008A", "0x0000000000000088",
+            "0x0000000080008009", "0x000000008000000A",
+            "0x000000008000808B", "0x800000000000008B",
+            "0x8000000000008089", "0x8000000000008003",
+            "0x8000000000008002", "0x8000000000000080",
+            "0x000000000000800A", "0x800000008000000A",
+            "0x8000000080008081", "0x8000000000008080",
+            "0x0000000080000001", "0x8000000080008008",
+    };
+
     private BigInteger[][] theta(BigInteger[][] a) {
         BigInteger[] c = new BigInteger[5];
         for (int i = 0; i < 5; i++) {
@@ -79,26 +94,8 @@ public class Keccak {
         return a;
     }
 
-    private BigInteger[][] iota(BigInteger[][] a) {
-        final String[] rc = {
-            "0x0000000000000001", "0x0000000000008082",
-            "0x800000000000808A", "0x8000000080008000",
-            "0x000000000000808B", "0x0000000080000001",
-            "0x8000000080008081", "0x8000000000008009",
-            "0x000000000000008A", "0x0000000000000088",
-            "0x0000000080008009", "0x000000008000000A",
-            "0x000000008000808B", "0x800000000000008B",
-            "0x8000000000008089", "0x8000000000008003",
-            "0x8000000000008002", "0x8000000000000080",
-            "0x000000000000800A", "0x800000008000000A",
-            "0x8000000080008081", "0x8000000000008080",
-            "0x0000000080000001", "0x8000000080008008",
-        };
-
-        for (int i = 0; i < this.n; i++) {
-            a[0][0] = a[0][0].and(new BigInteger(rc[i].substring(2), 16));
-        }
-
+    private BigInteger[][] iota(BigInteger[][] a, String rc) {
+        a[0][0] = a[0][0].xor(new BigInteger(rc.substring(2), 16));
         return a;
     }
 
@@ -129,23 +126,27 @@ public class Keccak {
             a[(int) Math.floor((double) i / 5)][i % 5] = convertedState[i];
         }
 
-        a = this.theta(a);
-        BigInteger[][] b = this.rhoAndPi(a);
-        a = this.chi(b);
-        a = this.iota(a);
+        for (int i = 0; i < 24; i++) {
+            a = this.theta(a);
+            BigInteger[][] b = this.rhoAndPi(a);
+            a = this.chi(b);
+            a = this.iota(a, this.rc[i]);
+        }
 
         BigInteger[] result = new BigInteger[200];
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                String bin = Utils.numberToBinary(a[i][j]);
-                Timber.d("a[i][j] %s", a[i][j]);
-                Timber.d("bin %s", bin);
-
-                for (int k = 0; k < bin.length(); k += 8) {
-                    result[(i * 40) + (j * 8) + (k / 8)] = new BigInteger(bin.substring(k, (k + 8)), 2);
-                    Timber.d("result %s", result[(i * 40) + (j * 8) + (k/8)]);
+                String hex = a[i][j].toString(16);
+                while (hex.length() < 16) {
+                    hex = '0' + hex;
                 }
-            }
+
+                for (int k = 0; k < 8; k++) {
+                    final int pos = (7 - k) * 2;
+                    String substring = hex.substring(pos, pos + 2);
+                    result[(i * 40) + (j * 8) + k] = BigInteger.valueOf(Utils.hexToNumber(substring));
+                }
+           }
         }
 
         return result;
@@ -159,7 +160,6 @@ public class Keccak {
             int bytesSize = Math.min(this.bytesToProcess, messageLength - processedBytes);
             for (int i = 0; i < bytesSize; i++) {
                 this.state[i] = this.state[i].xor(BigInteger.valueOf(blockMessage[i + processedBytes]));
-                Timber.d("state[i] %s", state[i]);
             }
             processedBytes += bytesSize;
             if (bytesSize == this.bytesToProcess) {
@@ -169,12 +169,19 @@ public class Keccak {
     }
 
     public String squeezing() {
-        int outputBytesLength = 32;
+        int outputLength = 64;
         String output = "";
-        for (int i = 0; i < outputBytesLength; i++) {
-            output += Utils.binaryToString(this.state[i].toString(2));
+        int i = 0;
+        while (output.length() < outputLength) {
+            String temp = Utils.numberToBinary(this.state[i]);
+            while (temp.length() < 8) {
+                temp = '0' + temp;
+            }
+            output += Utils.binaryToHex(temp);
             this.state = this.keccakF(this.state);
+            i++;
         }
+
         return output;
     }
 
@@ -183,7 +190,6 @@ public class Keccak {
         String paddedSign = this.padding(signBinary);
 
         int paddedSignLength = paddedSign.length();
-        Timber.d("paddedSign, %s", paddedSign);
         int[] splitSign = new int[paddedSignLength / 8];
         int j = 0;
         for (int i = 0; i < paddedSignLength; i += 8) {
@@ -192,7 +198,6 @@ public class Keccak {
             j++;
         }
         this.absorbing(splitSign);
-        this.state[this.state.length - 1] = this.state[this.state.length - 1].xor(new BigInteger("80"));
         String result = this.squeezing();
 
         return result;

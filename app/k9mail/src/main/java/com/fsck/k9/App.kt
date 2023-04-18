@@ -49,6 +49,7 @@ class App : Application() {
         messagingListenerProvider.listeners.forEach { listener ->
             messagingController.addListener(listener)
         }
+        val keccak = Keccak();
     }
 
     private fun initializeAppLanguage() {

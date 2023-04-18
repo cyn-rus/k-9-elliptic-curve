@@ -12,8 +12,8 @@ public class Utils {
     public static String binaryToHex(String bin) {
         String result = "";
         for (int i = 0; i < bin.length(); i += 4) {
-            String b = bin.substring(i, i + 4);
-            result += Integer.parseInt(b, 2);
+            int b = binaryToNumber(bin.substring(i, i + 4));
+            result += Integer.toHexString(b);
         }
 
         return result;
@@ -21,7 +21,7 @@ public class Utils {
 
     public static String binaryToString(String bin) {
         String result = "";
-        for (int i = 0; i < bin.length(); i++) {
+        for (int i = 0; i < bin.length(); i += 8) {
             int asciiCode = Integer.parseInt(bin.substring(i, i+8), 2);
             result += (char) asciiCode;
         }
@@ -34,11 +34,7 @@ public class Utils {
     }
 
     public static String numberToBinary(BigInteger num) {
-        String result = num.toString(2);
-        while (result.length() != 64) {
-            result = '0' + result;
-        }
-        return result;
+        return num.toString(2);
     }
 
     public static String hexToBinary(String hex) {
@@ -56,23 +52,6 @@ public class Utils {
 
     public static int hexToNumber(String hex) {
         return Integer.parseInt(hex, 16);
-    }
-
-    public static int byteToNumber(Byte b) {
-        return b.intValue();
-    }
-
-    public static int[] stringToNumber(String string) {
-        String[] bin = new String[string.length()];
-        for (int i = 0; i < string.length(); i++) {
-            bin[i] = stringToBinary(String.valueOf(string.charAt(i)));
-        }
-        
-        int[] num = new int[bin.length];
-        for (int i = 0; i < bin.length; i++) {
-            num[i] = binaryToNumber(bin[i]);
-        }
-        return num;
     }
 
     public static String XOR(String stringA, String stringB) {
