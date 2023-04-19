@@ -4,11 +4,13 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import com.fsck.k9.digitalSignEcnryption.Keccak;
+
 
 public class ECDSA {
-  public static Signature sign(String msg, PrivateKey key, MessageDigest hash) {
-    byte[] hashValue = hash.digest(msg.getBytes());
-    BigInteger rawMsg = Utils.stringToNum(hashValue);
+  public static Signature sign(String msg, PrivateKey key, Keccak hash) {
+    String hashValue = hash.hash(msg);
+    BigInteger rawMsg = new BigInteger(hashValue, 16);
     Curve curve = key.curve;
     BigInteger random = Utils.between(BigInteger.ONE, curve.N);
     Point randomSignPoint = Math.multiply(curve.G, random, curve.N, curve.A, curve.P);
@@ -18,9 +20,9 @@ public class ECDSA {
     return new Signature(r, s);
   }
 
-  public static boolean verify(String msg, Signature signature, PublicKey key, MessageDigest hash) {
-    byte[] hashValue = hash.digest(msg.getBytes());
-    BigInteger rawMsg = Utils.stringToNum(hashValue);
+  public static boolean verify(String msg, Signature signature, PublicKey key, Keccak hash) {
+    String hashValue = hash.hash(msg);
+    BigInteger rawMsg = new BigInteger(hashValue, 16);
     Curve curve = key.curve;
     BigInteger r = signature.r;
     BigInteger s = signature.s;
@@ -57,17 +59,13 @@ public class ECDSA {
     PublicKey publicKey = privateKey.publicKey();
 
     String exampleMsg = "Tubes susah :(";
-    
-    try {
-      Signature signature = sign(exampleMsg, privateKey, MessageDigest.getInstance("SHA-256"));
 
-      // Verify if signature is valid
-      boolean verified = verify(exampleMsg, signature, publicKey, MessageDigest.getInstance("SHA-256"));
+    Signature signature = sign(exampleMsg, privateKey, new Keccak());
 
-      // Return the signature verification status
-      System.out.println("Kecocokan pesan dgn signature: " + verified);
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("Could not find SHA-256 message digest in provided java environment");
-    }
+    // Verify if signature is valid
+    boolean verified = verify(exampleMsg, signature, publicKey, new Keccak());
+
+    // Return the signature verification status
+    System.out.println("Kecocokan pesan dgn signature: " + verified);
   }
 }
