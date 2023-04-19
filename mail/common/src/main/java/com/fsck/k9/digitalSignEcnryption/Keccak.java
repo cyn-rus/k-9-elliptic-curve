@@ -2,10 +2,8 @@ package com.fsck.k9.digitalSignEcnryption;
 
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
 import com.fsck.k9.Utils;
-import com.fsck.k9.logging.Timber;
 
 
 public class Keccak {

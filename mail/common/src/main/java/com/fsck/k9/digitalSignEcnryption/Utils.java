@@ -391,4 +391,39 @@ public class Utils {
     Random random = new SecureRandom();
     return new BigInteger(end.toByteArray().length * 8 - 1, random).abs().add(start);
   }
+
+  public static int binaryToNumber(String binary) {
+    return Integer.parseInt(binary, 2);
+  }
+
+  public static String binaryToHex(String bin) {
+    String result = "";
+    for (int i = 0; i < bin.length(); i += 4) {
+      int b = binaryToNumber(bin.substring(i, i + 4));
+      result += Integer.toHexString(b);
+    }
+
+    return result;
+  }
+
+  public static String numberToBinary(BigInteger num) {
+    return num.toString(2);
+  }
+
+  public static String stringToBinary(String string) {
+    String result = "";
+    char[] chars = string.toCharArray();
+    for (char c : chars) {
+      String bin = Integer.toBinaryString(c);
+      if (bin.length() != 8) {
+        bin = String.format("%8s", bin).replaceAll(" ", "0");
+      }
+      result += bin;
+    }
+    return result;
+  }
+
+  public static int hexToNumber(String hex) {
+    return Integer.parseInt(hex, 16);
+  }
 }
